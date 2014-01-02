@@ -19,7 +19,8 @@
 # IN THE SOFTWARE.
 
 PLATFORM ?= $(shell sh -c 'uname -s | tr "[A-Z]" "[a-z]"')
-SONAME ?= libhttp_parser.so.2.2
+LIBNAME ?= libhttp_parser
+SONAME ?= $(LIBNAME).so.2.2
 
 CC?=gcc
 AR?=ar
@@ -72,6 +73,9 @@ test-valgrind: test_g
 
 libhttp_parser.o: http_parser.c http_parser.h Makefile
 	$(CC) $(CPPFLAGS_FAST) $(CFLAGS_LIB) -c http_parser.c -o libhttp_parser.o
+
+static-library: libhttp_parser.o
+	ar rcs $(LIBNAME).a libhttp_parser.o
 
 library: libhttp_parser.o
 	$(CC) $(LDFLAGS_LIB) -o $(SONAME) $<
