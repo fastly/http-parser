@@ -216,6 +216,8 @@ struct http_parser {
    */
   unsigned int upgrade : 1;
 
+  unsigned int ignore_url;
+
   /** PUBLIC **/
   void *data; /* A pointer to get hook to the "connection" or "socket" object */
 };

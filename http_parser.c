@@ -256,6 +256,7 @@ enum state
 
   , s_req_method
   , s_req_spaces_before_url
+  , s_ignore_url
   , s_req_schema
   , s_req_schema_slash
   , s_req_schema_slash_slash
@@ -627,6 +628,7 @@ size_t http_parser_execute (http_parser *parser,
   case s_req_query_string:
   case s_req_fragment_start:
   case s_req_fragment:
+  case s_ignore_url:
     url_mark = data;
     break;
   case s_res_status:
@@ -1035,10 +1037,35 @@ size_t http_parser_execute (http_parser *parser,
           parser->state = s_req_server_start;
         }
 
-        parser->state = parse_url_char((enum state)parser->state, ch);
-        if (parser->state == s_dead) {
-          SET_ERRNO(HPE_INVALID_URL);
-          goto error;
+        if (parser->ignore_url) {
+          parser->state = s_ignore_url;
+        } else {
+          parser->state = parse_url_char((enum state)parser->state, ch);
+          if (parser->state == s_dead) {
+            SET_ERRNO(HPE_INVALID_URL);
+            goto error;
+          }
+        }
+
+        break;
+      }
+
+      case s_ignore_url:
+      {
+        switch (ch) {
+          case CR:
+          case LF:
+            parser->http_major = 0;
+            parser->http_minor = 9;
+            parser->state = (ch == CR) ?
+              s_req_line_almost_done :
+              s_header_field_start;
+            CALLBACK_DATA(url);
+            break;
+          case ' ':
+            parser->state = s_req_http_start;
+            CALLBACK_DATA(url);
+            break;
         }
 
         break;
